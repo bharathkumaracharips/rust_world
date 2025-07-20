@@ -1,43 +1,20 @@
 'use client';
 import { Canvas } from '@react-three/fiber';
 import { OrbitControls, Html, Text } from '@react-three/drei';
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
+import { useSpring, animated } from '@react-spring/three'; // ✨ Import for animations
 
+// --- Helper Functions (Unchanged) ---
 function randomAddress() {
   return '0x' + Math.floor(Math.random() * 0xfffff).toString(16).padStart(5, '0');
 }
-
 function splitCodeLine(line: string) {
   return line.match(/\w+|[^\w\s]+/g) || [];
 }
 
-function MemoryCell({ position, label, value, highlight, mutable, address }: { position: [number, number, number], label?: string, value?: string | number, highlight?: boolean, mutable?: boolean, address: string }) {
-  return (
-    <group position={position}>
-      <mesh>
-        <boxGeometry args={[1.2, 1, 1]} />
-        <meshStandardMaterial color={highlight ? '#ffeb3b' : mutable ? '#90caf9' : '#bdbdbd'} />
-      </mesh>
-      <Text position={[0, 0.4, 0.6]} fontSize={0.25} color="#333" anchorX="center" anchorY="middle">{label || address}</Text>
-      {value !== undefined && <Text position={[0, 0, 0.6]} fontSize={0.3} color="#222" anchorX="center" anchorY="middle">{value}</Text>}
-      {mutable && <Text position={[0, -0.4, 0.6]} fontSize={0.18} color="#1976d2" anchorX="center" anchorY="middle">mutable</Text>}
-      <Text position={[0, -0.7, 0.6]} fontSize={0.16} color="#888" anchorX="center" anchorY="middle">{address}</Text>
-    </group>
-  );
-}
-
-function ConsoleArea({ output }: { output: string[] }) {
-  return (
-    <Html position={[0, -2.5, 0]} center style={{ width: 400, background: 'rgba(30,30,30,0.97)', borderRadius: 12, padding: 16, color: '#fff', fontFamily: 'monospace', fontSize: 18, boxShadow: '0 2px 16px #0006' }}>
-      <div><b>Console Output:</b></div>
-      <div style={{ minHeight: 32 }}>
-        {output.map((line, i) => <div key={i}>{line}</div>)}
-      </div>
-    </Html>
-  );
-}
-
+// --- Data & Templates (Unchanged) ---
 const codeExampleTemplate = [
+  // ... (Your original step data remains here)
   { word: 'fn', explanation: 'Start of the main function.', codeLineIdx: 0, codeWordIdx: 0, memory: [], console: [], highlight: 0 },
   { word: 'main()', explanation: 'Function name.', codeLineIdx: 0, codeWordIdx: 1, memory: [], console: [], highlight: 1 },
   { word: '{', explanation: 'Enter function scope.', codeLineIdx: 0, codeWordIdx: 2, memory: [], console: [], highlight: 2 },
@@ -86,7 +63,6 @@ const codeExampleTemplate = [
     { var: 'x2', stage: 'value', value: 6, position: [2, 0, 0] as [number, number, number] }
   ], console: ['x after shadowing = 6'], highlight: 16 },
 ];
-
 const codeLines = [
   'fn main() {',
   '    let x = 5;',
@@ -95,104 +71,226 @@ const codeLines = [
   '}',
 ];
 
+// ✨ --- Animated MemoryCell Component ---
+function MemoryCell({ position, label, value, highlight, mutable, address }: { position: [number, number, number], label?: string, value?: string | number, highlight?: boolean, mutable?: boolean, address: string }) {
+  const { scale, color } = useSpring<{ scale: number; color: string }>({
+    scale: 1,
+    color: highlight ? '#ffeb3b' : mutable ? '#64b5f6' : '#bdbdbd',
+    from: { scale: 0, color: '#bdbdbd' },
+    config: { tension: 300, friction: 20 },
+  });
+
+  return (
+    <animated.group position={position} scale={scale}>
+      <mesh>
+        <boxGeometry args={[1.2, 1, 1]} />
+        <animated.meshStandardMaterial color={color} />
+      </mesh>
+      <Text position={[0, 0.4, 0.6]} fontSize={0.25} color="#212121" anchorX="center" anchorY="middle">{label || address}</Text>
+      {value !== undefined && <Text position={[0, 0, 0.6]} fontSize={0.3} color="#000" anchorX="center" anchorY="middle">{value}</Text>}
+      {mutable && <Text position={[0, -0.4, 0.6]} fontSize={0.18} color="#0d47a1" anchorX="center" anchorY="middle">mutable</Text>}
+      <Text position={[0, -0.7, 0.6]} fontSize={0.16} color="#757575" anchorX="center" anchorY="middle">{address}</Text>
+    </animated.group>
+  );
+}
+
+// ✨ --- Enhanced Console Component ---
+function ConsoleArea({ output }: { output: string[] }) {
+  return (
+    <Html position={[0, -2.8, 0]} center style={{ width: 400, pointerEvents: 'none' }}>
+      <div className="glass-panel" style={{ background: 'rgba(30,30,30,0.8)' }}>
+        <b style={{ color: '#eee' }}>Console Output:</b>
+        <div style={{ minHeight: 24, color: '#4caf50', paddingTop: '8px' }}>
+          {output.map((line, i) => <div key={i}>{`> ${line}`}</div>)}
+        </div>
+      </div>
+    </Html>
+  );
+}
+
+// ✨ --- New Controls Component ---
+interface ControlsProps {
+  step: number;
+  totalSteps: number;
+  onPrev: () => void;
+  onNext: () => void;
+  onReset: () => void;
+}
+function Controls({ step, totalSteps, onPrev, onNext, onReset }: ControlsProps) {
+  const progress = totalSteps > 1 ? (step / (totalSteps - 1)) * 100 : 0;
+  return (
+    <div className="controls-container">
+      <div className="progress-bar-background">
+        <div className="progress-bar-foreground" style={{ width: `${progress}%` }} />
+      </div>
+      <div className="buttons">
+        <button onClick={onReset} title="Reset (Home)">↩️ Reset</button>
+        <button onClick={onPrev} disabled={step === 0} title="Previous (←)">‹ Prev</button>
+        <button onClick={onNext} disabled={step === totalSteps - 1} title="Next (→)">Next ›</button>
+      </div>
+    </div>
+  );
+}
+
+// --- Main App Component ---
 export default function Shadowing() {
-  // Precompute addresses for x1 and x2 (shadowed variables)
-  const [addresses] = useState(() => ({
-    x1: randomAddress(),
-    x2: randomAddress(),
-  }));
-
-  // Build the animation steps with injected addresses
-  const steps = useMemo(() => codeExampleTemplate.map(step => {
-    const memory = (step.memory || []).map(cell => {
-      if (cell.var === 'x1') return { ...cell, address: addresses.x1, label: 'x' };
-      if (cell.var === 'x2') return { ...cell, address: addresses.x2, label: 'x' };
-      return cell;
-    });
-    return { ...step, memory };
-  }), [addresses]);
-
+  const [addresses] = useState(() => ({ x1: randomAddress(), x2: randomAddress() }));
   const [step, setStep] = useState(0);
+  const [isFading, setIsFading] = useState(false); // For explanation text animation
+
+  const steps = useMemo(() => codeExampleTemplate.map(s => ({
+      ...s,
+      memory: (s.memory || []).map(cell => ({
+        ...cell,
+        address: cell.var === 'x1' ? addresses.x1 : addresses.x2,
+        label: 'x',
+      })),
+  })), [addresses]);
+
   const currentStep = steps[step];
-  const memoryBlocks = useMemo(() => currentStep.memory.map(cell => {
-    let label = (cell as any).label;
-    if (!label && (cell as any).var) label = (cell as any).var;
-    let address = (cell as any).address || '';
-    return {
-      ...cell,
-      address,
-      label,
-    };
-  }), [currentStep]);
-
-  let highlightLineIdx = null, highlightWordIdx = null;
-  for (let i = step; i >= 0; i--) {
-    if (steps[i].codeLineIdx !== undefined && steps[i].codeWordIdx !== undefined) {
-      highlightLineIdx = steps[i].codeLineIdx;
-      highlightWordIdx = steps[i].codeWordIdx;
-      break;
+  const { codeLineIdx, codeWordIdx } = useMemo(() => {
+    for (let i = step; i >= 0; i--) {
+        if (steps[i].codeLineIdx !== undefined && steps[i].codeWordIdx !== undefined) {
+            return { codeLineIdx: steps[i].codeLineIdx, codeWordIdx: steps[i].codeWordIdx };
+        }
     }
-  }
+    return { codeLineIdx: null, codeWordIdx: null };
+  }, [step, steps]);
 
-  React.useEffect(() => {
+  // ✨ Animate step changes with a brief fade for the explanation text
+  const changeStep = (newStep: number) => {
+    setIsFading(true);
+    setTimeout(() => {
+      setStep(newStep);
+      setIsFading(false);
+    }, 150); // Match this duration with CSS transition
+  };
+
+  const handleNext = () => step < steps.length - 1 && changeStep(step + 1);
+  const handlePrev = () => step > 0 && changeStep(step - 1);
+  const handleReset = () => changeStep(0);
+
+  useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'ArrowRight') {
-        if (step < steps.length - 1) setStep((s) => s + 1);
-      }
-      if (e.key === 'ArrowLeft') {
-        if (step > 0) setStep((s) => s - 1);
-      }
+      if (e.key === 'ArrowRight') handleNext();
+      if (e.key === 'ArrowLeft') handlePrev();
+      if (e.key === 'Home') handleReset();
     };
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
   }, [step, steps.length]);
 
   return (
-    <div style={{ width: '100vw', height: '100vh', background: 'linear-gradient(120deg, #e0eafc, #cfdef3)' }}>
-      <Canvas camera={{ position: [1, 0, 6], fov: 50 }} shadows>
-        <ambientLight intensity={0.7} />
-        <directionalLight position={[5, 5, 5]} intensity={0.5} />
-        {memoryBlocks.map((cell, i) => (
-          <MemoryCell key={cell.address + (cell.label || '')} {...cell} />
-        ))}
-        <OrbitControls enablePan={false} />
-        <ConsoleArea output={currentStep.console} />
-      </Canvas>
-      <div style={{ position: 'fixed', top: 24, left: 0, width: '100%', textAlign: 'center', pointerEvents: 'none' }}>
-        <span style={{ background: '#fff', borderRadius: 8, padding: '4px 16px', fontSize: 18, color: '#333', boxShadow: '0 2px 8px #0001', pointerEvents: 'auto' }}>
-          Step {step + 1} / {steps.length} (←/→ to animate)
-        </span>
+    <>
+      {/* ✨ Add a global style tag for our new CSS */}
+      <style>{`
+        body { font-family: 'Inter', sans-serif; }
+        .glass-panel {
+          background: rgba(255, 255, 255, 0.6);
+          backdrop-filter: blur(10px);
+          -webkit-backdrop-filter: blur(10px);
+          border: 1px solid rgba(255, 255, 255, 0.2);
+          border-radius: 16px;
+          padding: 24px;
+          box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.1);
+        }
+        .controls-container {
+          position: fixed;
+          bottom: 0;
+          left: 0;
+          width: 100%;
+          padding: 16px 32px;
+          box-sizing: border-box;
+          z-index: 100;
+        }
+        .progress-bar-background {
+          height: 8px;
+          background: rgba(0, 0, 0, 0.1);
+          border-radius: 4px;
+          overflow: hidden;
+          margin-bottom: 12px;
+        }
+        .progress-bar-foreground {
+          height: 100%;
+          background: #1976d2;
+          border-radius: 4px;
+          transition: width 0.2s ease-out;
+        }
+        .controls-container .buttons {
+          display: flex;
+          justify-content: center;
+          gap: 12px;
+        }
+        .controls-container button {
+          font-family: 'Inter', sans-serif;
+          font-size: 16px;
+          font-weight: 500;
+          padding: 8px 20px;
+          border-radius: 8px;
+          border: 1px solid transparent;
+          cursor: pointer;
+          background: #fff;
+          color: #333;
+          box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+          transition: all 0.2s ease;
+        }
+        .controls-container button:hover:not(:disabled) {
+          background: #f0f0f0;
+          transform: translateY(-2px);
+          box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+        .controls-container button:disabled {
+          opacity: 0.5;
+          cursor: not-allowed;
+        }
+        .explanation-text {
+          transition: opacity 0.15s ease-in-out;
+        }
+      `}</style>
+
+      <div style={{ width: '100vw', height: '100vh', background: 'linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%)' }}>
+        <Canvas camera={{ position: [1, 0, 8], fov: 50 }} shadows>
+          <ambientLight intensity={0.8} />
+          <directionalLight position={[5, 5, 5]} intensity={0.6} castShadow />
+          {currentStep.memory.map((cell) => (
+            <MemoryCell key={cell.address} {...cell} />
+          ))}
+          <OrbitControls enablePan={false} maxPolarAngle={Math.PI / 1.8} minPolarAngle={Math.PI / 2.2} />
+          <ConsoleArea output={currentStep.console} />
+        </Canvas>
+
+        {/* --- UI Panels --- */}
+        <div style={{ position: 'fixed', left: 32, top: 32, width: 450 }} className="glass-panel">
+          <h2 style={{ marginTop: 0, marginBottom: 16, color: '#111' }}>Code Execution</h2>
+          <pre style={{ background: '#2d2d2d', color: '#f8f8f2', padding: 16, borderRadius: 8, fontSize: 16, overflowX: 'auto' }}>
+            {codeLines.map((line: string, idx: number) => {
+              const words = splitCodeLine(line);
+              return (
+                <div key={idx} style={{ display: 'flex', flexWrap: 'wrap' }}>
+                  {words.map((w, j) => (
+                    <span key={j} style={{
+                      background: idx === codeLineIdx && j === codeWordIdx ? '#1976d2' : 'transparent',
+                      borderRadius: 4, padding: '2px 4px', marginRight: 2,
+                    }}>{w}</span>
+                  ))}
+                </div>
+              );
+            })}
+          </pre>
+          <h2 style={{ margin: '24px 0 8px', color: '#111' }}>Explanation</h2>
+          <div className="explanation-text" style={{ fontSize: 18, color: '#333', minHeight: 54, opacity: isFading ? 0 : 1 }}>
+            {currentStep.explanation}
+          </div>
+        </div>
+        
+        <Controls
+          step={step}
+          totalSteps={steps.length}
+          onPrev={handlePrev}
+          onNext={handleNext}
+          onReset={handleReset}
+        />
       </div>
-      <div style={{ position: 'fixed', right: 32, top: 32, width: 400, background: 'rgba(255,255,255,0.97)', borderRadius: 16, padding: 24, boxShadow: '0 4px 32px #0002' }}>
-        <h2 style={{ marginBottom: 12 }}>Code</h2>
-        <pre style={{ background: '#222', color: '#fff', padding: 16, borderRadius: 8, fontSize: 16, overflowX: 'auto' }}>
-          {codeLines.map((line: string, idx: number) => {
-            const words = splitCodeLine(line);
-            return (
-              <div key={idx} style={{ background: idx === highlightLineIdx ? '#222' : 'transparent', color: '#fff', padding: '0 4px', display: 'flex', flexWrap: 'wrap' }}>
-                {words.map((w: string, j: number) => (
-                  <span
-                    key={j}
-                    style={{
-                      background: idx === highlightLineIdx && j === highlightWordIdx ? '#1976d2' : 'transparent',
-                      color: idx === highlightLineIdx && j === highlightWordIdx ? '#fff' : '#fff9',
-                      fontWeight: idx === highlightLineIdx && j === highlightWordIdx ? 'bold' : 'normal',
-                      borderRadius: 4,
-                      padding: '0 2px',
-                      marginRight: 2,
-                      textDecoration: idx === highlightLineIdx && j === highlightWordIdx ? 'underline' : 'none',
-                    }}
-                  >
-                    {w}
-                  </span>
-                ))}
-              </div>
-            );
-          })}
-        </pre>
-        <h2 style={{ margin: '16px 0 8px' }}>Explanation</h2>
-        <div style={{ fontSize: 17, color: '#333' }}>{currentStep.explanation}</div>
-      </div>
-    </div>
+    </>
   );
 }
