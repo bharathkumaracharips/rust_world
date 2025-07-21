@@ -12,6 +12,24 @@ import LoopFlow from './Loop';
 import WhileLoopFlow from './While_loop';
 import ForLoopFlow from './For_loop';
 import MatchFlow from './Match';
+import ConstructTypes from './Construct_types';
+import ImplTraits from './Impl_traits';
+import Functions from './Functions';
+import Methods from './Methods';
+import PatternMatching from './Pattern_matching';
+import Arrays from './Arrays';
+import Vectors from './Vectors';
+import LinkedLists from './LinkedLists';
+import Stacks from './Stacks';
+import Queues from './Queues';
+import HashMaps from './HashMaps';
+import HashSets from './HashSets';
+import BinaryHeaps from './BinaryHeaps';
+import StackHeap from './StackHeap';
+import Ownership from './Ownership';
+import MemorySafety from './MemorySafety';
+import Borrowing from './Borrowing';
+import Slices from './Slices';
 
 const components = {
   variables: { name: 'Variables', component: Variables },
@@ -24,6 +42,24 @@ const components = {
   while_loop: { name: 'While Loop', component: WhileLoopFlow },
   for_loop: { name: 'For Loop', component: ForLoopFlow },
   match: { name: 'Match', component: MatchFlow },
+  construct_types: { name: 'Construct Types', component: ConstructTypes },
+  impl_traits: { name: 'Impl & Traits', component: ImplTraits },
+  functions: { name: 'Functions', component: Functions },
+  methods: { name: 'Methods', component: Methods },
+  pattern_matching: { name: 'Pattern Matching', component: PatternMatching },
+  arrays: { name: 'Arrays', component: Arrays },
+  vectors: { name: 'Vectors', component: Vectors },
+  linked_lists: { name: 'Linked Lists', component: LinkedLists },
+  stacks: { name: 'Stacks', component: Stacks },
+  queues: { name: 'Queues', component: Queues },
+  hash_maps: { name: 'HashMaps', component: HashMaps },
+  hash_sets: { name: 'HashSets', component: HashSets },
+  binary_heaps: { name: 'Binary Heaps', component: BinaryHeaps },
+  stack_heap: { name: 'Stack & Heap', component: StackHeap },
+  ownership: { name: 'Ownership', component: Ownership },
+  memory_safety: { name: 'Memory Safety', component: MemorySafety },
+  borrowing: { name: 'Borrowing & References', component: Borrowing },
+  slices: { name: 'Slices', component: Slices },
 };
 
 type ComponentKey = keyof typeof components;
