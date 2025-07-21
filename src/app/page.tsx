@@ -30,6 +30,27 @@ import Ownership from './Ownership';
 import MemorySafety from './MemorySafety';
 import Borrowing from './Borrowing';
 import Slices from './Slices';
+import OptionResult from './OptionResult';
+import ErrorPropagation from './ErrorPropagation';
+import CustomError from './CustomError';
+import ModulesCrates from './ModulesCrates';
+import CodeOrganization from './CodeOrganization';
+import DependencyManagement from './DependencyManagement';
+import PublishingCrateIo from './PublishingCrateIo';
+import Testing from './Testing';
+import UnitTesting from './UnitTesting';
+import Mocking from './Mocking';
+import Benchmarking from './Benchmarking';
+import ThreadChannels from './ThreadChannels';
+import MessagePassing from './MessagePassing';
+import AtomicOperation from './AtomicOperation';
+import MemoryBarriers from './MemoryBarriers';
+import FutureAsyncAwait from './FutureAsyncAwait';
+import TraitsImpl from './TraitsImpl';
+import TraitBoundsAssocTypes from './TraitBoundsAssocTypes';
+import GenericsTypeLevel from './GenericsTypeLevel';
+import LifetimeBorrowChecker from './LifetimeBorrowChecker';
+import MacrosMetaProgramming from './MacrosMetaProgramming';
 
 const components = {
   variables: { name: 'Variables', component: Variables },
@@ -60,6 +81,27 @@ const components = {
   memory_safety: { name: 'Memory Safety', component: MemorySafety },
   borrowing: { name: 'Borrowing & References', component: Borrowing },
   slices: { name: 'Slices', component: Slices },
+  option_result: { name: 'Option & Result', component: OptionResult },
+  error_propagation: { name: 'Error Propagation (?)', component: ErrorPropagation },
+  custom_error: { name: 'Custom Error Types', component: CustomError },
+  modules_crates: { name: 'Modules & Crates', component: ModulesCrates },
+  code_organization: { name: 'Code Organization & Namespacing', component: CodeOrganization },
+  dependency_management: { name: 'Dependency Management', component: DependencyManagement },
+  publishing_crate_io: { name: 'Publishing on crates.io', component: PublishingCrateIo },
+  testing: { name: 'Testing', component: Testing },
+  unit_testing: { name: 'Unit Testing', component: UnitTesting },
+  mocking: { name: 'Mocking', component: Mocking },
+  benchmarking: { name: 'Benchmarking', component: Benchmarking },
+  thread_channels: { name: 'Thread Channels', component: ThreadChannels },
+  message_passing: { name: 'Message Passing', component: MessagePassing },
+  atomic_operation: { name: 'Atomic Operation', component: AtomicOperation },
+  memory_barriers: { name: 'Memory Barriers', component: MemoryBarriers },
+  future_async_await: { name: 'Futures & Async/Await', component: FutureAsyncAwait },
+  traits_impl: { name: 'Traits: Def & Impl', component: TraitsImpl },
+  trait_bounds_assoc_types: { name: 'Trait Bounds & Assoc Types', component: TraitBoundsAssocTypes },
+  generics_type_level: { name: 'Generics & Type-level', component: GenericsTypeLevel },
+  lifetime_borrow_checker: { name: 'Lifetime & Borrow Checker', component: LifetimeBorrowChecker },
+  macros_meta_programming: { name: 'Macros & Meta Programming', component: MacrosMetaProgramming },
 };
 
 type ComponentKey = keyof typeof components;
